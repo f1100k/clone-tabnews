@@ -59,3 +59,24 @@ export class MethodNotAllowed extends Error {
     };
   }
 }
+
+export class ValidationError extends Error {
+  constructor({ cause, message, action }) {
+    super(message || "A requisição não foi corretamente preenchida.", {
+      cause,
+    });
+
+    this.name = "ValidationError";
+    this.action = action || `Preencha os campos corretamente.`;
+    this.statusCode = 400;
+  }
+
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      action: this.action,
+      status_code: this.statusCode,
+    };
+  }
+}

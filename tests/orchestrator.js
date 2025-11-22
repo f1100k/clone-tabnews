@@ -20,7 +20,7 @@ async function waitForAllServices() {
 }
 
 async function cleanDatabase() {
-  database.query("drop schema public cascade; create schema public;");
+  await database.query("drop schema public cascade; create schema public;");
 }
 
 async function runPendingMigrations() {
