@@ -37,4 +37,5 @@ exports.up = (pgm) => {
   });
 };
 
+// eslint-disable-next-line
 exports.down = (pgm) => {};

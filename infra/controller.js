@@ -15,7 +15,8 @@ function errorHandler(error, request, response) {
     return response.status(error.statusCode).json(error);
   }
 
-  const publicError = new InternalServerError({ statusCode: error.statusCode,
+  const publicError = new InternalServerError({
+    statusCode: error.statusCode,
     cause: error,
   });
 
