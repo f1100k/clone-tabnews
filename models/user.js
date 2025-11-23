@@ -1,6 +1,6 @@
 import database from "infra/database.js";
 import { ValidationError, NotFoundError } from "infra/errors.js";
-import passowrd from "models/password.js";
+import password from "models/password.js";
 
 async function findOneByUsername(username) {
   const foundUser = await runSelectQuery(username);
@@ -26,7 +26,8 @@ async function findOneByUsername(username) {
 async function create(userInputValues) {
   validateMissingFields(userInputValues);
   await validateUniqueUser(userInputValues);
-  await passowrd.hashPasswordInObject(userInputValues);
+  await validateUniqueEmail(userInputValues);
+  await password.hashPasswordInObject(userInputValues);
 
   return await runInsertQuery(userInputValues);
 
@@ -56,23 +57,100 @@ async function create(userInputValues) {
       });
     }
   }
+}
 
-  function validateMissingFields(userInputValues) {
-    if (
-      !userInputValues?.email ||
-      !userInputValues?.username ||
-      !userInputValues?.password
-    ) {
-      throw new ValidationError({
-        action:
-          "Preencha corretamente os campos 'username', 'email' e 'password'",
-      });
+async function update(username, userInputValues) {
+  const foundUser = await findOneByUsername(username);
+
+  if ("username" in userInputValues) {
+    if (userInputValues.username !== foundUser.username) {
+      await validateUniqueUsername(userInputValues);
     }
+  }
+
+  if ("email" in userInputValues) {
+    await validateUniqueEmail(userInputValues);
+  }
+
+  if ("password" in userInputValues) {
+    await password.hashPasswordInObject(userInputValues);
+  }
+
+  const newUserValues = { ...foundUser, ...userInputValues };
+
+  const updatedUser = await runUpdateQuery(newUserValues);
+
+  return updatedUser;
+}
+
+async function runUpdateQuery(userWithNewValues) {
+  const result = await database.query({
+    text: `
+      UPDATE
+        users
+      SET
+        username = $2,
+        email = $3,
+        password = $4,
+        updated_at = timezone('utc', now())
+      WHERE id = $1
+      RETURNING *;
+    `,
+    values: [
+      userWithNewValues.id,
+      userWithNewValues.username,
+      userWithNewValues.email,
+      userWithNewValues.password,
+    ],
+  });
+
+  return result.rows[0];
+}
+
+async function validateUniqueEmail(userInputValues) {
+  const result = await database.query({
+    text: "select * from users where lower(email) = lower($1);",
+    values: [userInputValues.email],
+  });
+
+  if (result.rows.length > 0) {
+    throw new ValidationError({
+      message: "O email informado já foi utilizado.",
+      action: "Utilize outro email para realizar essa operação.",
+    });
+  }
+}
+
+async function validateUniqueUsername(userInputValues) {
+  const result = await database.query({
+    text: "select * from users where lower(username) = lower($1);",
+    values: [userInputValues.username],
+  });
+
+  if (result.rows.length > 0) {
+    throw new ValidationError({
+      message: "O username informado já foi utilizado.",
+      action: "Utilize outro username para realizar essa operação.",
+    });
+  }
+}
+
+function validateMissingFields(userInputValues) {
+  if (
+    !userInputValues?.email ||
+    !userInputValues?.username ||
+    !userInputValues?.password
+  ) {
+    throw new ValidationError({
+      action:
+        "Preencha corretamente os campos 'username', 'email' e 'password'",
+    });
   }
 }
 
 const user = {
   create,
+  update,
   findOneByUsername,
 };
 
