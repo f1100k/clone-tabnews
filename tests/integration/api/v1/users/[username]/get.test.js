@@ -10,25 +10,19 @@ beforeAll(async () => {
 describe("GET api/v1/users/[username]", () => {
   describe("Anonymous user", () => {
     test("With exact case match", async () => {
-      await fetch("http://localhost:3000/api/v1/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: "JohnDoe",
-          email: "johndoe@email.com",
-          password: "password123",
-        }),
+      await orchestrator.createUser({
+        username: "JohnDoe",
+        email: "johndoe@email.com",
+        password: "password123",
       });
 
-      const response2 = await fetch(
+      const response = await fetch(
         "http://localhost:3000/api/v1/users/JohnDoe",
       );
 
-      expect(response2.status).toBe(200);
+      expect(response.status).toBe(200);
 
-      const responseBody = await response2.json();
+      const responseBody = await response.json();
 
       expect(responseBody).toEqual({
         id: responseBody.id,
@@ -45,30 +39,24 @@ describe("GET api/v1/users/[username]", () => {
     });
 
     test("With mismatch", async () => {
-      await fetch("http://localhost:3000/api/v1/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: "JohnDoe",
-          email: "johndoe@email.com",
-          password: "password123",
-        }),
+      await orchestrator.createUser({
+        username: "MismatchUser",
+        email: "mismatch@email.com",
+        password: "password123",
       });
 
-      const response2 = await fetch(
-        "http://localhost:3000/api/v1/users/johndoe",
+      const response = await fetch(
+        "http://localhost:3000/api/v1/users/mismatchuser",
       );
 
-      expect(response2.status).toBe(200);
+      expect(response.status).toBe(200);
 
-      const responseBody = await response2.json();
+      const responseBody = await response.json();
 
       expect(responseBody).toEqual({
         id: responseBody.id,
-        username: "JohnDoe",
-        email: "johndoe@email.com",
+        username: "MismatchUser",
+        email: "mismatch@email.com",
         password: responseBody.password,
         created_at: responseBody.created_at,
         updated_at: responseBody.updated_at,
