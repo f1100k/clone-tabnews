@@ -1,5 +1,26 @@
 import database from "infra/database.js";
-import { ValidationError } from "infra/errors";
+import { ValidationError, NotFoundError } from "infra/errors.js";
+
+async function findOneByUsername(username) {
+  const foundUser = await runSelectQuery(username);
+  return foundUser;
+
+  async function runSelectQuery(username) {
+    const result = await database.query({
+      text: "select * from users where lower(username) = lower($1) limit 1;",
+      values: [username],
+    });
+
+    if (result.rowCount === 0) {
+      throw new NotFoundError({
+        message: `Não foi possível encontrar usuário com o username: ${username}.`,
+        action: "Forneça um username existente.",
+      });
+    }
+
+    return result.rows[0];
+  }
+}
 
 async function create(userInputValues) {
   validateMissingFields(userInputValues);
@@ -50,6 +71,7 @@ async function create(userInputValues) {
 
 const user = {
   create,
+  findOneByUsername,
 };
 
 export default user;
