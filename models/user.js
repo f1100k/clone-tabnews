@@ -2,9 +2,28 @@ import database from "infra/database.js";
 import { ValidationError, NotFoundError } from "infra/errors.js";
 import password from "models/password.js";
 
+async function findOneByEmail(email) {
+  return await runSelectQuery(email);
+
+  async function runSelectQuery(email) {
+    const result = await database.query({
+      text: "select * from users where lower(email) = lower($1) limit 1;",
+      values: [email],
+    });
+
+    if (result.rowCount === 0) {
+      throw new NotFoundError({
+        message: `Não foi possível encontrar usuário com o email: ${email}.`,
+        action: "Forneça um email existente.",
+      });
+    }
+
+    return result.rows[0];
+  }
+}
+
 async function findOneByUsername(username) {
-  const foundUser = await runSelectQuery(username);
-  return foundUser;
+  return await runSelectQuery(username);
 
   async function runSelectQuery(username) {
     const result = await database.query({
@@ -152,6 +171,7 @@ const user = {
   create,
   update,
   findOneByUsername,
+  findOneByEmail,
 };
 
 export default user;
