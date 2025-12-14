@@ -2,9 +2,33 @@ import database from "infra/database.js";
 import { ValidationError, NotFoundError } from "infra/errors.js";
 import password from "models/password.js";
 
+async function hashPasswordInObject(userInputValues) {
+  const hashedPassword = await password.hash(userInputValues.password);
+  userInputValues.password = hashedPassword;
+}
+
+async function findOneByEmail(email) {
+  return await runSelectQuery(email);
+
+  async function runSelectQuery(email) {
+    const result = await database.query({
+      text: "select * from users where lower(email) = lower($1) limit 1;",
+      values: [email],
+    });
+
+    if (result.rowCount === 0) {
+      throw new NotFoundError({
+        message: `Não foi possível encontrar usuário com o email: ${email}.`,
+        action: "Forneça um email existente.",
+      });
+    }
+
+    return result.rows[0];
+  }
+}
+
 async function findOneByUsername(username) {
-  const foundUser = await runSelectQuery(username);
-  return foundUser;
+  return await runSelectQuery(username);
 
   async function runSelectQuery(username) {
     const result = await database.query({
@@ -27,7 +51,7 @@ async function create(userInputValues) {
   validateMissingFields(userInputValues);
   await validateUniqueUser(userInputValues);
   await validateUniqueEmail(userInputValues);
-  await password.hashPasswordInObject(userInputValues);
+  await hashPasswordInObject(userInputValues);
 
   return await runInsertQuery(userInputValues);
 
@@ -73,7 +97,7 @@ async function update(username, userInputValues) {
   }
 
   if ("password" in userInputValues) {
-    await password.hashPasswordInObject(userInputValues);
+    await hashPasswordInObject(userInputValues);
   }
 
   const newUserValues = { ...foundUser, ...userInputValues };
@@ -152,6 +176,7 @@ const user = {
   create,
   update,
   findOneByUsername,
+  findOneByEmail,
 };
 
 export default user;
