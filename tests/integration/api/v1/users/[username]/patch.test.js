@@ -189,6 +189,8 @@ describe("PATCH api/v1/users/[username]", () => {
       expect(Date.parse(responseBody.created_at)).not.toBeNaN();
       expect(Date.parse(responseBody.updated_at)).not.toBeNaN();
 
+      console.log("responseBody", responseBody);
+
       expect("newpassword123" !== responseBody.password).toBeTruthy();
 
       const correctPasswordMatch = await password.compare(
