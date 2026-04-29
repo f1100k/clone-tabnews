@@ -7,6 +7,22 @@ async function hashPasswordInObject(userInputValues) {
   userInputValues.password = hashedPassword;
 }
 
+async function findOneById(userId) {
+  const result = await database.query({
+    text: `select * from users where id=$1 limit 1;`,
+    values: [userId],
+  });
+
+  if (result.rowCount === 0) {
+    throw new NotFoundError({
+      message: `Não foi possível encontrar usuário com o id: ${userId}.`,
+      action: "Forneça um id existente.",
+    });
+  }
+
+  return result.rows[0];
+}
+
 async function findOneByEmail(email) {
   return await runSelectQuery(email);
 
@@ -177,6 +193,7 @@ const user = {
   update,
   findOneByUsername,
   findOneByEmail,
+  findOneById,
 };
 
 export default user;
